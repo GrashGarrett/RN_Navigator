@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MyCare ER Visit Demo</title>
+    <style>
+      :root{
+        --bg0:#0a1020;
+        --bg1:#0c1530;
+        --card: rgba(255,255,255,.06);
+        --border: rgba(255,255,255,.14);
+        --text: rgba(255,255,255,.92);
+        --muted: rgba(255,255,255,.68);
+        --accent: #7dd3fc;
+        --good: #86efac;
+        --bad:  #fca5a5;
+      }
+
+      *{ box-sizing:border-box; }
+      body{
+        margin:0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+        color: var(--text);
+        min-height:100vh;
+        padding: 28px;
+        background:
+          radial-gradient(900px 700px at 15% 10%, #1b2b66 0%, var(--bg0) 55%),
+          radial-gradient(900px 700px at 85% 35%, #0b6b68 0%, var(--bg0) 55%),
+          linear-gradient(180deg, var(--bg0), #050812);
+      }
+
+      .wrap{
+        max-width: 1100px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 18px;
+        align-items: start;
+      }
+
+      .card{
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      }
+
+      h1{ margin: 0 0 8px; font-size: 26px; }
+      p{ margin: 0 0 12px; color: var(--muted); line-height: 1.45; }
+
+      .chips{ display:flex; flex-wrap:wrap; gap: 8px; margin-top: 10px; }
+      .chip{
+        display:inline-flex;
+        align-items:center;
+        gap: 8px;
+        font-size: 12px;
+        color: rgba(255,255,255,.88);
+        border: 1px solid rgba(255,255,255,.14);
+        background: rgba(255,255,255,.05);
+        padding: 6px 10px;
+        border-radius: 999px;
+        user-select:none;
+      }
+      .dot{ width: 8px; height: 8px; border-radius: 999px; background: var(--accent); }
+      .dot.good{ background: var(--good); }
+      .dot.bad{ background: var(--bad); }
+
+      .actions{
+        display:flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+      }
+      .btn{
+        appearance:none;
+        border: 1px solid rgba(255,255,255,.18);
+        background: rgba(125,211,252,.14);
+        color: var(--text);
+        padding: 11px 14px;
+        border-radius: 12px;
+        font-weight: 900;
+        cursor:pointer;
+        text-decoration:none;
+        display:inline-flex;
+        align-items:center;
+        gap: 10px;
+      }
+      .btn.secondary{ background: rgba(255,255,255,.06); }
+      .btn:active{ transform: translateY(1px); }
+
+      .mono{
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      }
+
+      .info{
+        margin-top: 10px;
+        padding: 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,.12);
+        background: rgba(0,0,0,.18);
+      }
+      .infoTitle{
+        margin:0 0 6px;
+        color: rgba(255,255,255,.88);
+        font-weight: 800;
+      }
+      .infoRow{
+        display:flex;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 13px;
+        margin-top: 6px;
+        color: rgba(255,255,255,.85);
+      }
+      .infoRow span:first-child{ color: var(--muted); }
+
+      /* Phone preview frame */
+      .phone{
+        width: min(390px, 92vw);
+        height: min(790px, 82vh);
+        border-radius: 44px;
+        padding: 14px;
+        border: 1px solid rgba(255,255,255,.18);
+        background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+        box-shadow: 0 30px 90px rgba(0,0,0,.55);
+        position: sticky;
+        top: 18px;
+      }
+      .bezel{
+        width: 100%;
+        height: 100%;
+        border-radius: 36px;
+        padding: 12px;
+        background: #030617;
+        overflow: hidden;
+        position: relative;
+      }
+      .notch{
+        position:absolute;
+        top:10px;
+        left:50%;
+        transform:translateX(-50%);
+        width: 160px;
+        height: 28px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.08);
+        border: 1px solid rgba(255,255,255,.12);
+        z-index:5;
+      }
+      iframe{
+        width: 100%;
+        height: 100%;
+        border: 0;
+        border-radius: 28px;
+        background: #050815;
+      }
+
+      .fineprint{
+        margin-top: 10px;
+        font-size: 12px;
+        color: rgba(255,255,255,.55);
+      }
+
+      /* Responsive */
+      @media (max-width: 940px){
+        .wrap{ grid-template-columns: 1fr; }
+        .phone{ position: relative; top: 0; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="wrap">
+      <section class="card">
+        <h1>MyCare ER Visit — Mobile App Demo</h1>
+        <p>
+          Open a mobile-style ER visit dashboard (sample data only). Designed to be launched from a link/QR—no installs, no setup.
+        </p>
+
+        <div class="chips">
+          <div class="chip"><span class="dot good"></span>Safe demo data</div>
+          <div class="chip"><span class="dot"></span>QR check-in (simulated)</div>
+          <div class="chip"><span class="dot"></span>ER status → tests → discharge</div>
+        </div>
+
+        <div class="info">
+          <p class="infoTitle">How it works (demo)</p>
+          <div class="infoRow"><span>Authentication</span><span class="mono">QR scan (simulated)</span></div>
+          <div class="infoRow"><span>Flow</span><span class="mono">Intro → Verified → Dashboard</span></div>
+          <div class="infoRow"><span>What to try</span><span class="mono">Refresh status / Simulate results</span></div>
+        </div>
+
+        <div class="actions">
+          <a class="btn" id="openBtn" href="./app.html">🚑 Open ER Visit Dashboard</a>
+          <a class="btn secondary" id="newTabBtn" href="./app.html" target="_blank" rel="noopener">↗ Open in new tab</a>
+          <button class="btn secondary" id="copyBtn" type="button">🔗 Copy link</button>
+        </div>
+
+        <p class="fineprint">
+          This demo contains no real patient information and is not intended for medical advice or emergencies.
+        </p>
+      </section>
+
+      <aside class="phone" aria-label="Mobile preview">
+        <div class="bezel">
+          <div class="notch" aria-hidden="true"></div>
+          <iframe title="ER Visit Preview" src="./app.html"></iframe>
+        </div>
+      </aside>
+    </div>
+
+    <script>
+      const appUrl = new URL("./app.html", window.location.href).toString();
+
+      const openBtn = document.getElementById("openBtn");
+      const newTabBtn = document.getElementById("newTabBtn");
+      const copyBtn = document.getElementById("copyBtn");
+
+      openBtn.href = appUrl;
+      newTabBtn.href = appUrl;
+
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(appUrl);
+          copyBtn.textContent = "✅ Link copied";
+          setTimeout(() => (copyBtn.textContent = "🔗 Copy link"), 1400);
+        } catch {
+          window.prompt("Copy this link:", appUrl);
+        }
+      });
+    </script>
+  </body>
+</html>

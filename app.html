@@ -1,0 +1,1155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nurse Navigator</title>
+    <style>
+      :root{
+        --bg0:#0a1020;
+        --card: rgba(255,255,255,.06);
+        --card2: rgba(255,255,255,.04);
+        --border: rgba(255,255,255,.14);
+        --text: rgba(255,255,255,.92);
+        --muted: rgba(255,255,255,.68);
+        --accent: #7dd3fc;
+        --good: #86efac;
+        --warn: #fdba74;
+        --bad:  #fca5a5;
+      }
+
+      *{ box-sizing:border-box; }
+      html, body { height: 100%; }
+      body{
+        margin:0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+        color: var(--text);
+        background:
+          radial-gradient(900px 700px at 20% 10%, #1b2b66 0%, var(--bg0) 55%),
+          radial-gradient(900px 700px at 85% 35%, #0b6b68 0%, var(--bg0) 55%),
+          linear-gradient(180deg, var(--bg0), #050812);
+      }
+
+      .app{
+        height: 100vh;
+        padding: 18px;
+        position: relative;
+      }
+
+      .topbar{
+        display:flex;
+        align-items:center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding-top: 6px;
+      }
+      .brand{
+        display:flex;
+        flex-direction:column;
+        gap:2px;
+      }
+      .brand .name{ font-weight: 900; letter-spacing: .2px; }
+      .brand .tag{ font-size: 12px; color: var(--muted); }
+      .pill{
+        font-size: 12px;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        padding: 6px 10px;
+        border-radius: 999px;
+        user-select: none;
+      }
+
+      .card{
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      }
+      .card.soft{ background: var(--card2); }
+
+      h1{ font-size: 22px; margin: 0 0 6px; }
+      h2{ font-size: 16px; margin: 0 0 10px; }
+      p{ margin: 0 0 14px; font-size: 13px; line-height: 1.35; color: var(--muted); }
+
+      .btn{
+        width:100%;
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,.18);
+        background: rgba(125,211,252,.14);
+        color: var(--text);
+        font-weight: 900;
+        cursor:pointer;
+      }
+      .btn.secondary{ background: rgba(255,255,255,.06); }
+      .btn:disabled{ opacity:.65; cursor:not-allowed; }
+
+      .row{ display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top:10px; }
+      .row.wrap{ flex-wrap: wrap; justify-content:flex-start; }
+
+      .link{
+        background:none;
+        border:none;
+        color: rgba(255,255,255,.82);
+        font-size: 12px;
+        cursor:pointer;
+        text-decoration: underline;
+        padding:0;
+      }
+
+      .toggle{
+        display:flex; align-items:center; gap:8px;
+        font-size: 12px; color: var(--muted);
+        margin-top: 10px;
+        user-select:none;
+      }
+      .toggle input{ width: 16px; height: 16px; }
+
+      .divider{ height: 1px; background: rgba(255,255,255,.10); margin: 12px 0; }
+
+      .screen{ display:none; }
+      .screen.active{ display:block; }
+
+      /* Bottom tabs */
+      .tabs{
+        position:absolute;
+        left: 18px;
+        right: 18px;
+        bottom: 14px;
+        display:grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+        padding: 10px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: rgba(0,0,0,.30);
+        backdrop-filter: blur(8px);
+      }
+      .tab{
+        border: 1px solid rgba(255,255,255,.12);
+        background: rgba(255,255,255,.05);
+        border-radius: 14px;
+        padding: 8px 6px;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap: 4px;
+        cursor:pointer;
+        user-select:none;
+      }
+      .tab .ico{ font-size: 14px; }
+      .tab .txt{ font-size: 10px; color: var(--muted); }
+      .tab.active{
+        border-color: rgba(125,211,252,.55);
+        background: rgba(125,211,252,.12);
+      }
+      .tab.active .txt{ color: rgba(255,255,255,.88); }
+
+      /* Scroll area above tabs */
+      .content{
+        position:absolute;
+        top: 66px;
+        left: 18px;
+        right: 18px;
+        bottom: 84px;
+        overflow:auto;
+        padding-right: 4px;
+      }
+      .content::-webkit-scrollbar{ width: 6px; }
+      .content::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.12); border-radius: 999px; }
+
+      .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      @media (max-width: 380px){ .grid2{ grid-template-columns: 1fr; } }
+
+      .chip{
+        display:inline-flex;
+        align-items:center;
+        gap: 6px;
+        font-size: 12px;
+        color: rgba(255,255,255,.86);
+        border: 1px solid rgba(255,255,255,.14);
+        background: rgba(255,255,255,.05);
+        padding: 6px 10px;
+        border-radius: 999px;
+      }
+      .dot{ width: 8px; height: 8px; border-radius: 999px; background: var(--accent); }
+      .dot.good{ background: var(--good); }
+      .dot.warn{ background: var(--warn); }
+      .dot.bad{  background: var(--bad);  }
+
+      .item{
+        border: 1px solid rgba(255,255,255,.12);
+        background: rgba(255,255,255,.04);
+        border-radius: 14px;
+        padding: 12px;
+        margin-top: 10px;
+      }
+      .item .top{ display:flex; justify-content: space-between; gap: 10px; align-items:flex-start; }
+      .item .title{ font-weight: 800; margin:0; font-size: 13px; color: rgba(255,255,255,.92); }
+      .item .meta{ margin: 4px 0 0; font-size: 12px; color: var(--muted); line-height: 1.35; }
+      .badge{
+        font-size: 11px;
+        color: rgba(255,255,255,.84);
+        border: 1px solid rgba(255,255,255,.14);
+        padding: 4px 8px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+
+      .mono{
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      }
+
+      .footerHint{
+        margin-top: 12px;
+        font-size: 11px;
+        color: rgba(255,255,255,.55);
+        text-align:center;
+      }
+
+      /* NPC Intro */
+      .npcStage{
+        min-height: calc(100vh - 90px);
+        display:flex;
+        flex-direction:column;
+        gap: 14px;
+        justify-content:center;
+      }
+      .npcHeader{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap: 10px;
+      }
+      .npcAvatarRow{
+        display:flex;
+        align-items:center;
+        gap: 12px;
+      }
+
+      /* Avatar now supports an image */
+      .npcAvatar{
+        width: 56px;
+        height: 56px;
+        border-radius: 18px;
+        border: 1px solid rgba(255,255,255,.18);
+        background: rgba(255,255,255,.06);
+        overflow: hidden;
+        display:grid;
+        place-items:center;
+      }
+      .npcAvatar img{
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        display: block;
+      }
+
+      .npcName{
+        display:flex;
+        flex-direction:column;
+        gap: 2px;
+      }
+      .npcName .title{
+        font-weight: 900;
+        letter-spacing: .2px;
+      }
+      .npcName .sub{
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .dialogue{
+        border-radius: 18px;
+        border: 1px solid rgba(255,255,255,.14);
+        background: rgba(0,0,0,.18);
+        padding: 14px;
+        position: relative;
+      }
+      .dialogue:before{
+        content:"";
+        position:absolute;
+        top:-8px;
+        left: 26px;
+        width: 14px;
+        height: 14px;
+        background: rgba(0,0,0,.18);
+        border-left: 1px solid rgba(255,255,255,.14);
+        border-top: 1px solid rgba(255,255,255,.14);
+        transform: rotate(45deg);
+      }
+      .dialogue p{
+        margin: 0;
+        color: rgba(255,255,255,.82);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .dialogue strong{ color: rgba(255,255,255,.92); }
+
+      .npcControls{
+        display:flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .npcControls .btn{ margin-top: 0; }
+
+      /* QR “verified” screen */
+      .qrStage{
+        min-height: calc(100vh - 90px);
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+        gap: 12px;
+      }
+      .qrRow{
+        display:flex;
+        align-items:center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .qrBox{
+        width: 180px;
+        height: 180px;
+        border-radius: 18px;
+        border: 1px solid rgba(255,255,255,.18);
+        background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+        position: relative;
+        overflow: hidden;
+        margin: 10px auto 0;
+      }
+      .qrInner{
+        position:absolute;
+        inset: 14px;
+        border-radius: 14px;
+        border: 1px dashed rgba(255,255,255,.20);
+        background:
+          radial-gradient(10px 10px at 20% 20%, rgba(125,211,252,.35), transparent 60%),
+          radial-gradient(10px 10px at 80% 25%, rgba(134,239,172,.25), transparent 60%),
+          radial-gradient(10px 10px at 25% 80%, rgba(134,239,172,.20), transparent 60%),
+          radial-gradient(10px 10px at 75% 75%, rgba(125,211,252,.25), transparent 60%),
+          rgba(0,0,0,.12);
+      }
+      .scanLine{
+        position:absolute;
+        left: 12px;
+        right: 12px;
+        height: 2px;
+        background: rgba(125,211,252,.85);
+        box-shadow: 0 0 18px rgba(125,211,252,.55);
+        top: 20px;
+        animation: scan 1.1s ease-in-out infinite;
+        opacity: .85;
+      }
+      @keyframes scan{
+        0% { transform: translateY(0); }
+        50%{ transform: translateY(130px); }
+        100%{ transform: translateY(0); }
+      }
+
+      .progress{
+        display:flex;
+        align-items:center;
+        gap: 10px;
+        color: rgba(255,255,255,.82);
+        font-size: 12px;
+        margin-top: 12px;
+      }
+      .spinner{
+        width: 14px;
+        height: 14px;
+        border-radius: 999px;
+        border: 2px solid rgba(255,255,255,.22);
+        border-top-color: rgba(125,211,252,.85);
+        animation: spin .8s linear infinite;
+      }
+      @keyframes spin{ to { transform: rotate(360deg); } }
+
+      /* ER timeline */
+      .stepper{
+        display:flex;
+        flex-direction:column;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .step{
+        display:flex;
+        gap: 10px;
+        align-items:flex-start;
+      }
+      .stepMark{
+        width: 14px;
+        height: 14px;
+        border-radius: 999px;
+        margin-top: 3px;
+        background: rgba(255,255,255,.18);
+        border: 1px solid rgba(255,255,255,.18);
+        flex: 0 0 auto;
+      }
+      .stepMark.done{ background: var(--good); border-color: rgba(255,255,255,.0); }
+      .stepMark.active{ background: var(--accent); border-color: rgba(255,255,255,.0); }
+      .stepMark.pending{ background: rgba(255,255,255,.18); }
+
+      .stepBody{ flex: 1 1 auto; }
+      .stepTitle{ margin:0; font-size: 13px; font-weight: 900; color: rgba(255,255,255,.92); }
+      .stepMeta{ margin: 3px 0 0; font-size: 12px; color: var(--muted); }
+    </style>
+  </head>
+
+  <body>
+    <div class="app">
+      <div class="topbar">
+        <div class="brand">
+          <div class="name">Nurse Navigator</div>
+          <div class="tag">Demo • sample data only</div>
+        </div>
+        <div class="pill" id="pillStatus">Signed out</div>
+      </div>
+
+      <!-- NPC INTRO -->
+      <section id="introScreen" class="screen">
+        <div class="npcStage">
+          <div class="card">
+            <div class="npcHeader">
+              <div class="npcAvatarRow">
+                <div class="npcAvatar">
+                  <img src="./assets/careguide.jpg" alt="CareGuide" />
+                </div>
+                <div class="npcName">
+                  <div class="title">Nella</div>
+                  <div class="sub">Nurse Navigator</div>
+                </div>
+              </div>
+              <div class="pill">Intro</div>
+            </div>
+
+            <div class="dialogue" style="margin-top:14px;">
+              <p id="npcText">
+                Welcome! You’ve already authenticated by scanning a <strong>QR code</strong> at ER check-in.
+                <br><br>
+                Next, we’ll link your <strong>ER visit</strong> and load a dashboard showing:
+                <strong>current step</strong> (triage, provider, tests), <strong>estimated wait</strong>,
+                <strong>tests ordered</strong>, and <strong>discharge info</strong> (all demo data).
+                <br><br>
+                This is a UI demo only — no real patient information.
+              </p>
+            </div>
+
+            <div class="npcControls" style="margin-top:14px;">
+              <button id="introContinueBtn" class="btn" type="button">Continue</button>
+              <button id="introReplayBtn" class="btn secondary" type="button">Replay intro text</button>
+              <button id="introSkipForeverBtn" class="btn secondary" type="button">Don’t show again</button>
+            </div>
+
+            <div class="footerHint">
+              Demo only. Not for emergencies—call local emergency services.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- QR VERIFIED -->
+      <section id="qrScreen" class="screen">
+        <div class="qrStage">
+          <div class="card">
+            <div class="qrRow">
+              <div>
+                <h1 style="margin:0 0 6px;">Check-in verified ✅</h1>
+                <p style="margin:0;">
+                  Linking your ER visit and loading status…
+                </p>
+              </div>
+              <div class="pill">QR Auth</div>
+            </div>
+
+            <div class="qrBox" aria-label="QR verification animation">
+              <div class="qrInner"></div>
+              <div class="scanLine"></div>
+            </div>
+
+            <label class="toggle" style="margin-top:12px;">
+              <input id="rememberMe" type="checkbox" checked />
+              Keep me signed in on this device
+            </label>
+
+            <div class="progress">
+              <div class="spinner" aria-hidden="true"></div>
+              <div id="progressText">Linking visit…</div>
+            </div>
+
+            <div class="row wrap" style="margin-top:12px;">
+              <button id="openNowBtn" class="btn secondary" type="button">Open dashboard now</button>
+              <button id="resetBtnTop" class="link" type="button">Reset demo</button>
+            </div>
+          </div>
+
+          <div class="footerHint">
+            Demo only. Not for emergencies—call local emergency services.
+          </div>
+        </div>
+      </section>
+
+      <!-- APP SHELL -->
+      <section id="appShell" class="screen">
+        <div class="content">
+          <!-- STATUS -->
+          <section id="viewStatus" class="screen active">
+            <div class="card">
+              <div class="row" style="margin-top:0;">
+                <div>
+                  <h2 style="margin:0 0 6px;">ER Visit Status</h2>
+                  <p style="margin:0;">Visit ID: <span id="visitId" class="mono"></span></p>
+                </div>
+                <span class="chip"><span class="dot" id="statusDot"></span><span id="statusLabel">Loading…</span></span>
+              </div>
+
+              <div class="divider"></div>
+
+              <div class="grid2">
+                <div class="card soft">
+                  <h2 style="margin:0 0 8px;">Arrival</h2>
+                  <p style="margin:0;">Location: <span id="erLocation">Emergency Dept • Main Campus</span></p>
+                  <p style="margin:8px 0 0;">Arrived: <span id="arrivalTime"></span></p>
+                </div>
+                <div class="card soft">
+                  <h2 style="margin:0 0 8px;">Estimated wait</h2>
+                  <div class="chip"><span class="dot warn"></span><span id="etaText">—</span></div>
+                  <p style="margin:10px 0 0;">Updated: <span id="updatedTime"></span></p>
+                </div>
+              </div>
+
+              <div class="divider"></div>
+
+              <h2 style="margin:0 0 8px;">Visit timeline</h2>
+              <div class="stepper" id="timeline"></div>
+
+              <button id="refreshStatusBtn" class="btn secondary" type="button">Refresh status (demo)</button>
+
+              <div class="footerHint">
+                For life-threatening symptoms, call emergency services. This is a demo UI.
+              </div>
+            </div>
+          </section>
+
+          <!-- TRIAGE -->
+          <section id="viewTriage" class="screen">
+            <div class="card">
+              <h2>Triage Snapshot</h2>
+              <p>Sample triage info (demo).</p>
+
+              <div class="grid2">
+                <div class="card soft">
+                  <h2 style="margin:0 0 8px;">Triage level</h2>
+                  <div class="chip"><span class="dot warn"></span><span id="triageLevel">ESI 3 (Urgent)</span></div>
+                  <p style="margin:10px 0 0;">Chief complaint: <span id="chiefComplaint">Chest pain (demo)</span></p>
+                </div>
+                <div class="card soft">
+                  <h2 style="margin:0 0 8px;">Vitals</h2>
+                  <p style="margin:0;">BP: <span id="vBP">128/82</span></p>
+                  <p style="margin:6px 0 0;">HR: <span id="vHR">96</span> • SpO₂: <span id="vSpO2">98%</span></p>
+                  <p style="margin:6px 0 0;">Temp: <span id="vTemp">98.6°F</span></p>
+                </div>
+              </div>
+
+              <div class="item">
+                <div class="top">
+                  <div>
+                    <p class="title">Allergies (demo)</p>
+                    <p class="meta">No known allergies (sample)</p>
+                  </div>
+                  <span class="badge">Verified</span>
+                </div>
+              </div>
+
+              <div class="item">
+                <div class="top">
+                  <div>
+                    <p class="title">Medications (demo)</p>
+                    <p class="meta">None listed (sample)</p>
+                  </div>
+                  <span class="badge">Review</span>
+                </div>
+              </div>
+
+              <button id="updateSymptomsBtn" class="btn secondary" type="button">Update symptoms (demo)</button>
+            </div>
+          </section>
+
+          <!-- TESTS -->
+          <section id="viewTests" class="screen">
+            <div class="card">
+              <h2>Tests & Results</h2>
+              <p>Orders and result status (demo).</p>
+
+              <div id="testsList"></div>
+
+              <button id="simulateTestUpdateBtn" class="btn secondary" type="button">
+                Simulate results update (demo)
+              </button>
+            </div>
+          </section>
+
+          <!-- CARE TEAM -->
+          <section id="viewCareTeam" class="screen">
+            <div class="card">
+              <h2>Care Team</h2>
+              <p>Secure updates from your ER team (demo).</p>
+
+              <div class="item">
+                <div class="top">
+                  <div>
+                    <p class="title">Dr. Rivera • Emergency Medicine</p>
+                    <p class="meta">Assigned provider (demo)</p>
+                  </div>
+                  <span class="badge">Assigned</span>
+                </div>
+              </div>
+
+              <div class="item">
+                <div class="top">
+                  <div>
+                    <p class="title">Nurse Kim • Triage</p>
+                    <p class="meta">Triage completed (demo)</p>
+                  </div>
+                  <span class="badge">Seen</span>
+                </div>
+              </div>
+
+              <div class="item">
+                <div class="top">
+                  <div>
+                    <p class="title">ER Updates</p>
+                    <p class="meta" id="careTeamUpdate">
+                      “We’re reviewing your symptoms and will call you when a room is available.” (demo)
+                    </p>
+                  </div>
+                  <span class="badge">Latest</span>
+                </div>
+              </div>
+
+              <div class="divider"></div>
+
+              <h2 style="margin:0 0 8px;">Ask a question (demo)</h2>
+              <input id="questionInput" placeholder="Type a question…" />
+              <button id="sendQuestionBtn" class="btn secondary" type="button">Send</button>
+              <p id="questionSent" style="display:none; margin-top:10px; color: var(--good); font-size:12px;">
+                Sent (demo). No real delivery.
+              </p>
+            </div>
+          </section>
+
+          <!-- DISCHARGE -->
+          <section id="viewDischarge" class="screen">
+            <div class="card">
+              <h2>Discharge</h2>
+              <p>Discharge information will appear when your visit reaches that step (demo).</p>
+
+              <div class="item">
+                <div class="top">
+                  <div>
+                    <p class="title">Current discharge status</p>
+                    <p class="meta" id="dischargeStatus">Not ready yet (demo)</p>
+                  </div>
+                  <span class="badge" id="dischargeBadge">Pending</span>
+                </div>
+              </div>
+
+              <div id="dischargePacket" style="display:none;">
+                <div class="item">
+                  <div class="top">
+                    <div>
+                      <p class="title">Summary (demo)</p>
+                      <p class="meta">Symptoms improved. Follow up with PCP in 1–2 days (sample).</p>
+                    </div>
+                    <span class="badge">Ready</span>
+                  </div>
+                </div>
+
+                <div class="item">
+                  <div class="top">
+                    <div>
+                      <p class="title">Home instructions (demo)</p>
+                      <p class="meta">
+                        Rest, hydrate, and monitor symptoms. Return if symptoms worsen (sample).
+                      </p>
+                    </div>
+                    <span class="badge">PDF</span>
+                  </div>
+                </div>
+
+                <div class="item">
+                  <div class="top">
+                    <div>
+                      <p class="title">Prescriptions (demo)</p>
+                      <p class="meta">None prescribed (sample)</p>
+                    </div>
+                    <span class="badge">—</span>
+                  </div>
+                </div>
+              </div>
+
+              <button id="generateDischargeBtn" class="btn secondary" type="button">
+                Generate discharge packet (demo)
+              </button>
+
+              <button id="logoutBtn" class="btn" type="button">End session (log out)</button>
+              <button id="resetBtn" class="btn secondary" type="button">Reset demo</button>
+
+              <div class="footerHint">
+                Demo only. Not medical advice.
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Bottom Tabs -->
+        <nav class="tabs" aria-label="Bottom navigation">
+          <div class="tab active" data-tab="Status" role="button" tabindex="0"><div class="ico">🚑</div><div class="txt">Status</div></div>
+          <div class="tab" data-tab="Triage" role="button" tabindex="0"><div class="ico">🩹</div><div class="txt">Triage</div></div>
+          <div class="tab" data-tab="Tests" role="button" tabindex="0"><div class="ico">🧪</div><div class="txt">Tests</div></div>
+          <div class="tab" data-tab="CareTeam" role="button" tabindex="0"><div class="ico">👩‍⚕️</div><div class="txt">Team</div></div>
+          <div class="tab" data-tab="Discharge" role="button" tabindex="0"><div class="ico">📄</div><div class="txt">DC</div></div>
+        </nav>
+      </section>
+    </div>
+
+    <script>
+      // Session keys
+      const TOKEN_KEY = "er_demo_token";
+      const EMAIL_KEY = "er_demo_email";
+      const REMEMBER_KEY = "er_demo_remember";
+      const INTRO_SEEN_KEY = "er_demo_intro_seen";
+
+      // “QR-auth identity”
+      const QR_DEMO_EMAIL = "patient@demo.com";
+
+      // Elements
+      const pillStatus = document.getElementById("pillStatus");
+
+      const introScreen = document.getElementById("introScreen");
+      const introContinueBtn = document.getElementById("introContinueBtn");
+      const introReplayBtn = document.getElementById("introReplayBtn");
+      const introSkipForeverBtn = document.getElementById("introSkipForeverBtn");
+      const npcText = document.getElementById("npcText");
+
+      const qrScreen = document.getElementById("qrScreen");
+      const rememberEl = document.getElementById("rememberMe");
+      const openNowBtn = document.getElementById("openNowBtn");
+      const resetBtnTop = document.getElementById("resetBtnTop");
+      const progressText = document.getElementById("progressText");
+
+      const appShell = document.getElementById("appShell");
+
+      // Status view
+      const visitIdEl = document.getElementById("visitId");
+      const statusDot = document.getElementById("statusDot");
+      const statusLabel = document.getElementById("statusLabel");
+      const arrivalTimeEl = document.getElementById("arrivalTime");
+      const updatedTimeEl = document.getElementById("updatedTime");
+      const etaTextEl = document.getElementById("etaText");
+      const timelineEl = document.getElementById("timeline");
+      const refreshStatusBtn = document.getElementById("refreshStatusBtn");
+
+      // Triage
+      const updateSymptomsBtn = document.getElementById("updateSymptomsBtn");
+      const triageLevelEl = document.getElementById("triageLevel");
+      const chiefComplaintEl = document.getElementById("chiefComplaint");
+      const vBP = document.getElementById("vBP");
+      const vHR = document.getElementById("vHR");
+      const vSpO2 = document.getElementById("vSpO2");
+      const vTemp = document.getElementById("vTemp");
+
+      // Tests
+      const testsList = document.getElementById("testsList");
+      const simulateTestUpdateBtn = document.getElementById("simulateTestUpdateBtn");
+
+      // Care team
+      const careTeamUpdate = document.getElementById("careTeamUpdate");
+      const questionInput = document.getElementById("questionInput");
+      const sendQuestionBtn = document.getElementById("sendQuestionBtn");
+      const questionSent = document.getElementById("questionSent");
+
+      // Discharge
+      const dischargeStatus = document.getElementById("dischargeStatus");
+      const dischargeBadge = document.getElementById("dischargeBadge");
+      const dischargePacket = document.getElementById("dischargePacket");
+      const generateDischargeBtn = document.getElementById("generateDischargeBtn");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const resetBtn = document.getElementById("resetBtn");
+
+      // Tabs
+      const tabs = Array.from(document.querySelectorAll(".tab"));
+      const views = {
+        Status: document.getElementById("viewStatus"),
+        Triage: document.getElementById("viewTriage"),
+        Tests: document.getElementById("viewTests"),
+        CareTeam: document.getElementById("viewCareTeam"),
+        Discharge: document.getElementById("viewDischarge"),
+      };
+
+      // Demo state
+      let qrAutoTimer = null;
+
+      const ER_STEPS = [
+        { key: "arrived", label: "Arrived & registered", meta: "Check-in complete (demo)" },
+        { key: "triage", label: "Triage", meta: "Vitals + symptoms collected (demo)" },
+        { key: "provider", label: "Provider evaluation", meta: "Waiting for provider (demo)" },
+        { key: "tests", label: "Tests / imaging", meta: "Orders placed & processing (demo)" },
+        { key: "discharge", label: "Discharge", meta: "Instructions and follow-up (demo)" },
+      ];
+
+      // 0..4 active step index
+      let currentStepIndex = 1;
+
+      let TESTS = [
+        { name: "ECG (12-lead)", status: "Final", detail: "Normal sinus rhythm (demo)" },
+        { name: "Troponin", status: "In progress", detail: "Processing (demo)" },
+        { name: "Chest X-ray", status: "Ordered", detail: "Queued (demo)" },
+        { name: "CBC", status: "Final", detail: "Within normal range (demo)" },
+      ];
+
+      function nowTime(){
+        const d = new Date();
+        return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      }
+
+      function makeVisitId(){
+        return "ER-" + Math.random().toString(16).slice(2, 6).toUpperCase();
+      }
+
+      function setSignedOutUI(){ pillStatus.textContent = "Signed out"; }
+      function setSignedInUI(){ pillStatus.textContent = "Active visit"; }
+
+      function hideAllScreens(){
+        introScreen.classList.remove("active");
+        qrScreen.classList.remove("active");
+        appShell.classList.remove("active");
+      }
+
+      function switchView(name){
+        Object.values(views).forEach(v => v.classList.remove("active"));
+        views[name].classList.add("active");
+        tabs.forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+      }
+
+      function statusDotClass(stepIndex){
+        // earlier steps: good, mid: warn, discharge-ready: good
+        if (stepIndex >= 4) return "good";
+        if (stepIndex >= 2) return "warn";
+        return "";
+      }
+
+      function currentStatusLabel(stepIndex){
+        const s = ER_STEPS[stepIndex]?.label ?? "In progress";
+        return s;
+      }
+
+      function renderTimeline(){
+        timelineEl.innerHTML = "";
+        ER_STEPS.forEach((s, idx) => {
+          const markClass = idx < currentStepIndex ? "done" : (idx === currentStepIndex ? "active" : "pending");
+          const step = document.createElement("div");
+          step.className = "step";
+          step.innerHTML = `
+            <div class="stepMark ${markClass}"></div>
+            <div class="stepBody">
+              <p class="stepTitle">${s.label}</p>
+              <p class="stepMeta">${s.meta}</p>
+            </div>
+          `;
+          timelineEl.appendChild(step);
+        });
+      }
+
+      function updateStatusCards(){
+        // status label + dot
+        statusLabel.textContent = currentStatusLabel(currentStepIndex);
+        statusDot.className = "dot " + statusDotClass(currentStepIndex);
+
+        // ETA logic (demo)
+        const etaMap = [
+          "10–20 min",
+          "20–40 min",
+          "30–60 min",
+          "15–30 min",
+          "Ready",
+        ];
+        etaTextEl.textContent = etaMap[currentStepIndex] ?? "—";
+        updatedTimeEl.textContent = nowTime();
+
+        // care team text based on step
+        const updates = [
+          "“Thanks for checking in. Please wait to be called for triage.” (demo)",
+          "“Triage is in progress. We’ll call you when ready.” (demo)",
+          "“A provider will see you as soon as possible.” (demo)",
+          "“Tests are processing. We’ll update you when results are ready.” (demo)",
+          "“Discharge instructions are being prepared.” (demo)",
+        ];
+        careTeamUpdate.textContent = updates[currentStepIndex] ?? updates[1];
+
+        // discharge gating
+        const isDischarge = currentStepIndex >= 4;
+        dischargeStatus.textContent = isDischarge ? "Ready (demo)" : "Not ready yet (demo)";
+        dischargeBadge.textContent = isDischarge ? "Ready" : "Pending";
+        dischargePacket.style.display = isDischarge ? "block" : "none";
+      }
+
+      function renderTests(){
+        testsList.innerHTML = "";
+        TESTS.forEach((t) => {
+          const statusChip =
+            t.status === "Final"
+              ? `<span class="chip"><span class="dot good"></span>${t.status}</span>`
+              : t.status === "In progress"
+              ? `<span class="chip"><span class="dot warn"></span>${t.status}</span>`
+              : `<span class="chip"><span class="dot"></span>${t.status}</span>`;
+
+          const el = document.createElement("div");
+          el.className = "item";
+          el.innerHTML = `
+            <div class="top">
+              <div>
+                <p class="title">${t.name}</p>
+                <p class="meta">${t.detail}</p>
+              </div>
+              ${statusChip}
+            </div>
+          `;
+          testsList.appendChild(el);
+        });
+      }
+
+      function bumpStatusDemo(){
+        currentStepIndex = Math.min(currentStepIndex + 1, ER_STEPS.length - 1);
+        renderTimeline();
+        updateStatusCards();
+
+        // “unlock” some test progress as we move
+        if (currentStepIndex >= 3) {
+          // move one item forward per refresh (demo)
+          const idx = TESTS.findIndex(x => x.status !== "Final");
+          if (idx !== -1) {
+            if (TESTS[idx].status === "Ordered") TESTS[idx].status = "In progress";
+            else if (TESTS[idx].status === "In progress") {
+              TESTS[idx].status = "Final";
+              TESTS[idx].detail = "Result available (demo)";
+            }
+          }
+          renderTests();
+        }
+      }
+
+      function replayNpcText(){
+        const full = `Welcome! You’ve already authenticated by scanning a QR code at ER check-in.
+
+Next, we’ll link your ER visit and load a dashboard showing:
+current step (triage, provider, tests), estimated wait, tests ordered, and discharge info (all demo data).
+
+This is a UI demo only — no real patient information.`;
+
+        let i = 0;
+        npcText.textContent = "";
+        const timer = setInterval(() => {
+          npcText.textContent += full[i] ?? "";
+          i++;
+          if (i > full.length) clearInterval(timer);
+        }, 9);
+      }
+
+      function makeToken(){
+        return "qr-session-" + Math.random().toString(16).slice(2);
+      }
+
+      function persistSession(email, token, remember){
+        localStorage.setItem(REMEMBER_KEY, remember ? "1" : "0");
+        if (remember){
+          localStorage.setItem(TOKEN_KEY, token);
+          localStorage.setItem(EMAIL_KEY, email.toLowerCase());
+        } else {
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(EMAIL_KEY);
+        }
+        window.__SESSION__ = { email: email.toLowerCase(), token };
+      }
+
+      function clearSession(){
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(EMAIL_KEY);
+        localStorage.removeItem(REMEMBER_KEY);
+        window.__SESSION__ = null;
+      }
+
+      function goIntro(){
+        clearTimeout(qrAutoTimer);
+        hideAllScreens();
+        introScreen.classList.add("active");
+        setSignedOutUI();
+      }
+
+      function goQR(){
+        clearTimeout(qrAutoTimer);
+        hideAllScreens();
+        qrScreen.classList.add("active");
+        setSignedOutUI();
+        startQRFlow();
+      }
+
+      function goApp(){
+        hideAllScreens();
+        appShell.classList.add("active");
+        setSignedInUI();
+        switchView("Status");
+      }
+
+      function startQRFlow(){
+        progressText.textContent = "Linking visit…";
+        setTimeout(() => { progressText.textContent = "Fetching live status…"; }, 450);
+        setTimeout(() => { progressText.textContent = "Loading dashboard…"; }, 900);
+
+        qrAutoTimer = setTimeout(() => {
+          persistSession(QR_DEMO_EMAIL, makeToken(), rememberEl.checked);
+          goApp();
+        }, 1400);
+      }
+
+      function resetEverything(){
+        clearTimeout(qrAutoTimer);
+        clearSession();
+        localStorage.removeItem(INTRO_SEEN_KEY);
+
+        // reset demo state
+        currentStepIndex = 1;
+        TESTS = [
+          { name: "ECG (12-lead)", status: "Final", detail: "Normal sinus rhythm (demo)" },
+          { name: "Troponin", status: "In progress", detail: "Processing (demo)" },
+          { name: "Chest X-ray", status: "Ordered", detail: "Queued (demo)" },
+          { name: "CBC", status: "Final", detail: "Within normal range (demo)" },
+        ];
+        if (rememberEl) rememberEl.checked = true;
+        if (questionInput) questionInput.value = "";
+        if (questionSent) questionSent.style.display = "none";
+        dischargePacket.style.display = "none";
+
+        goIntro();
+      }
+
+      // INIT
+      (function init(){
+        // restore remember toggle preference
+        const remember = localStorage.getItem(REMEMBER_KEY);
+        if (remember === "0") rememberEl.checked = false;
+
+        // restore session
+        const token = localStorage.getItem(TOKEN_KEY);
+        const email = localStorage.getItem(EMAIL_KEY);
+        if (token && email){
+          window.__SESSION__ = { email, token };
+          goApp();
+        } else {
+          const introSeen = localStorage.getItem(INTRO_SEEN_KEY) === "1";
+          if (!introSeen) goIntro();
+          else goQR();
+        }
+
+        // init visit visuals
+        visitIdEl.textContent = makeVisitId();
+        arrivalTimeEl.textContent = nowTime();
+        updatedTimeEl.textContent = nowTime();
+
+        renderTimeline();
+        updateStatusCards();
+        renderTests();
+      })();
+
+      // INTRO events
+      introContinueBtn.addEventListener("click", () => goQR());
+      introReplayBtn.addEventListener("click", () => replayNpcText());
+      introSkipForeverBtn.addEventListener("click", () => {
+        localStorage.setItem(INTRO_SEEN_KEY, "1");
+        goQR();
+      });
+
+      // QR events
+      openNowBtn.addEventListener("click", () => {
+        clearTimeout(qrAutoTimer);
+        persistSession(QR_DEMO_EMAIL, makeToken(), rememberEl.checked);
+        goApp();
+      });
+      resetBtnTop.addEventListener("click", () => resetEverything());
+
+      // STATUS events
+      refreshStatusBtn.addEventListener("click", () => bumpStatusDemo());
+
+      // TRIAGE events
+      updateSymptomsBtn.addEventListener("click", () => {
+        // tiny demo mutation
+        chiefComplaintEl.textContent = "Shortness of breath (demo)";
+        vHR.textContent = "102";
+        triageLevelEl.textContent = "ESI 2 (High risk) — demo";
+        alert("Demo: symptoms updated.");
+      });
+
+      // TESTS events
+      simulateTestUpdateBtn.addEventListener("click", () => {
+        // push one test forward
+        const idx = TESTS.findIndex(x => x.status !== "Final");
+        if (idx === -1) {
+          alert("All results are already final (demo).");
+          return;
+        }
+        if (TESTS[idx].status === "Ordered") TESTS[idx].status = "In progress";
+        else if (TESTS[idx].status === "In progress") {
+          TESTS[idx].status = "Final";
+          TESTS[idx].detail = "Result available (demo)";
+        }
+        renderTests();
+      });
+
+      // CARE TEAM events
+      sendQuestionBtn.addEventListener("click", () => {
+        questionSent.style.display = "none";
+        const q = questionInput.value.trim();
+        if (!q) {
+          questionSent.style.display = "block";
+          questionSent.style.color = "var(--bad)";
+          questionSent.textContent = "Please type a question (demo).";
+          return;
+        }
+        questionSent.style.display = "block";
+        questionSent.style.color = "var(--good)";
+        questionSent.textContent = "Sent (demo). No real delivery.";
+        questionInput.value = "";
+      });
+
+      // DISCHARGE events
+      generateDischargeBtn.addEventListener("click", () => {
+        if (currentStepIndex < 4) {
+          alert("Demo: discharge packet becomes available once the visit reaches Discharge.");
+          return;
+        }
+        dischargePacket.style.display = "block";
+        alert("Demo: discharge packet generated.");
+      });
+
+      logoutBtn.addEventListener("click", () => {
+        clearSession();
+        const introSeen = localStorage.getItem(INTRO_SEEN_KEY) === "1";
+        if (!introSeen) goIntro();
+        else goQR();
+      });
+
+      resetBtn.addEventListener("click", () => resetEverything());
+
+      // Tabs
+      function onTabClick(tabName){ switchView(tabName); }
+      tabs.forEach(t => {
+        t.addEventListener("click", () => onTabClick(t.dataset.tab));
+        t.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") onTabClick(t.dataset.tab);
+        });
+      });
+    </script>
+  </body>
+</html>
