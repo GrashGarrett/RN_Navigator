@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Nurse Navigator</title>
+    <title>Nurse Navigator ER Visit (Demo)</title>
     <style>
       :root{
         --bg0:#0a1020;
@@ -229,7 +229,7 @@
         gap: 12px;
       }
 
-      /* Avatar now supports an image */
+      /* Avatar image */
       .npcAvatar{
         width: 56px;
         height: 56px;
@@ -395,6 +395,85 @@
       .stepBody{ flex: 1 1 auto; }
       .stepTitle{ margin:0; font-size: 13px; font-weight: 900; color: rgba(255,255,255,.92); }
       .stepMeta{ margin: 3px 0 0; font-size: 12px; color: var(--muted); }
+
+      /* --- CareGuide chat (care progression) --- */
+      .chatWrap{
+        margin-top: 12px;
+        border: 1px solid rgba(255,255,255,.12);
+        background: rgba(0,0,0,.12);
+        border-radius: 16px;
+        padding: 12px;
+      }
+      .chatHeader{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .chatTitle{
+        display:flex;
+        align-items:center;
+        gap: 10px;
+        font-weight: 900;
+        color: rgba(255,255,255,.92);
+      }
+      .chat{
+        display:flex;
+        flex-direction:column;
+        gap: 10px;
+        max-height: 220px;
+        overflow:auto;
+        padding-right: 4px;
+      }
+      .chat::-webkit-scrollbar{ width: 6px; }
+      .chat::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.12); border-radius: 999px; }
+
+      .msg{
+        display:flex;
+        gap: 10px;
+        align-items:flex-start;
+      }
+      .msgAvatar{
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,.18);
+        background: rgba(255,255,255,.06);
+        overflow:hidden;
+        flex: 0 0 auto;
+      }
+      .msgAvatar img{
+        width:100%;
+        height:100%;
+        object-fit: cover;
+        display:block;
+      }
+
+      .bubble{
+        flex: 1 1 auto;
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,.12);
+        background: rgba(255,255,255,.04);
+        padding: 10px 10px;
+      }
+      .bubble .who{
+        font-size: 12px;
+        font-weight: 900;
+        color: rgba(255,255,255,.88);
+        margin-bottom: 4px;
+      }
+      .bubble .text{
+        font-size: 12px;
+        color: rgba(255,255,255,.78);
+        line-height: 1.45;
+        white-space: pre-wrap;
+      }
+      .bubble .meta{
+        margin-top: 6px;
+        font-size: 11px;
+        color: rgba(255,255,255,.55);
+      }
     </style>
   </head>
 
@@ -402,7 +481,7 @@
     <div class="app">
       <div class="topbar">
         <div class="brand">
-          <div class="name">Nurse Navigator</div>
+          <div class="name">Nurse Navigator — ER Visit</div>
           <div class="tag">Demo • sample data only</div>
         </div>
         <div class="pill" id="pillStatus">Signed out</div>
@@ -418,8 +497,8 @@
                   <img src="./assets/careguide.jpg" alt="CareGuide" />
                 </div>
                 <div class="npcName">
-                  <div class="title">Nella</div>
-                  <div class="sub">Nurse Navigator</div>
+                  <div class="title">CareGuide</div>
+                  <div class="sub">ER visit helper (NPC)</div>
                 </div>
               </div>
               <div class="pill">Intro</div>
@@ -431,7 +510,7 @@
                 <br><br>
                 Next, we’ll link your <strong>ER visit</strong> and load a dashboard showing:
                 <strong>current step</strong> (triage, provider, tests), <strong>estimated wait</strong>,
-                <strong>tests ordered</strong>, and <strong>discharge info</strong> (all demo data).
+                and <strong>discharge info</strong> (all demo data).
                 <br><br>
                 This is a UI demo only — no real patient information.
               </p>
@@ -524,6 +603,21 @@
 
               <h2 style="margin:0 0 8px;">Visit timeline</h2>
               <div class="stepper" id="timeline"></div>
+
+              <!-- NEW: Care progression chat + button -->
+              <div class="chatWrap">
+                <div class="chatHeader">
+                  <div class="chatTitle">
+                    <span>Nurse Navigator Updates</span>
+                    <span class="pill">NPC</span>
+                  </div>
+                  <button id="careNextBtn" class="btn secondary" type="button" style="width:auto; margin-top:0;">
+                    Continue care
+                  </button>
+                </div>
+
+                <div id="npcChat" class="chat" aria-label="CareGuide chat"></div>
+              </div>
 
               <button id="refreshStatusBtn" class="btn secondary" type="button">Refresh status (demo)</button>
 
@@ -752,6 +846,10 @@
       const timelineEl = document.getElementById("timeline");
       const refreshStatusBtn = document.getElementById("refreshStatusBtn");
 
+      // NEW: CareGuide chat + continue button
+      const npcChat = document.getElementById("npcChat");
+      const careNextBtn = document.getElementById("careNextBtn");
+
       // Triage
       const updateSymptomsBtn = document.getElementById("updateSymptomsBtn");
       const triageLevelEl = document.getElementById("triageLevel");
@@ -796,7 +894,7 @@
         { key: "arrived", label: "Arrived & registered", meta: "Check-in complete (demo)" },
         { key: "triage", label: "Triage", meta: "Vitals + symptoms collected (demo)" },
         { key: "provider", label: "Provider evaluation", meta: "Waiting for provider (demo)" },
-        { key: "tests", label: "Tests / imaging", meta: "Orders placed & processing (demo)" },
+        { key: "tests", label: "Labs / imaging", meta: "Orders placed & processing (demo)" },
         { key: "discharge", label: "Discharge", meta: "Instructions and follow-up (demo)" },
       ];
 
@@ -813,6 +911,10 @@
       function nowTime(){
         const d = new Date();
         return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      }
+
+      function timeStamp(){
+        return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       }
 
       function makeVisitId(){
@@ -835,15 +937,13 @@
       }
 
       function statusDotClass(stepIndex){
-        // earlier steps: good, mid: warn, discharge-ready: good
         if (stepIndex >= 4) return "good";
         if (stepIndex >= 2) return "warn";
         return "";
       }
 
       function currentStatusLabel(stepIndex){
-        const s = ER_STEPS[stepIndex]?.label ?? "In progress";
-        return s;
+        return ER_STEPS[stepIndex]?.label ?? "In progress";
       }
 
       function renderTimeline(){
@@ -864,11 +964,9 @@
       }
 
       function updateStatusCards(){
-        // status label + dot
         statusLabel.textContent = currentStatusLabel(currentStepIndex);
         statusDot.className = "dot " + statusDotClass(currentStepIndex);
 
-        // ETA logic (demo)
         const etaMap = [
           "10–20 min",
           "20–40 min",
@@ -879,17 +977,15 @@
         etaTextEl.textContent = etaMap[currentStepIndex] ?? "—";
         updatedTimeEl.textContent = nowTime();
 
-        // care team text based on step
         const updates = [
           "“Thanks for checking in. Please wait to be called for triage.” (demo)",
           "“Triage is in progress. We’ll call you when ready.” (demo)",
           "“A provider will see you as soon as possible.” (demo)",
-          "“Tests are processing. We’ll update you when results are ready.” (demo)",
+          "“Labs and imaging are processing. We’ll update you when results are ready.” (demo)",
           "“Discharge instructions are being prepared.” (demo)",
         ];
         careTeamUpdate.textContent = updates[currentStepIndex] ?? updates[1];
 
-        // discharge gating
         const isDischarge = currentStepIndex >= 4;
         dischargeStatus.textContent = isDischarge ? "Ready (demo)" : "Not ready yet (demo)";
         dischargeBadge.textContent = isDischarge ? "Ready" : "Pending";
@@ -921,23 +1017,116 @@
         });
       }
 
+      /* --- CareGuide chat helpers --- */
+      function clearChat(){
+        if (npcChat) npcChat.innerHTML = "";
+      }
+
+      function npcSay(text){
+        if (!npcChat) return;
+
+        const row = document.createElement("div");
+        row.className = "msg";
+        row.innerHTML = `
+          <div class="msgAvatar"><img src="./assets/careguide.jpg" alt="CareGuide"></div>
+          <div class="bubble">
+            <div class="who">Nella</div>
+            <div class="text"></div>
+            <div class="meta">${timeStamp()}</div>
+          </div>
+        `;
+        row.querySelector(".text").textContent = text;
+        npcChat.appendChild(row);
+        npcChat.scrollTop = npcChat.scrollHeight;
+      }
+
+      function seedNpcChat(){
+        clearChat();
+
+        npcSay(
+`Welcome to the best emergency department in town! My name is Nella, and I’ll be helping guide you through your visit today. We care for more than 100,000 patients each year and keeping you informed about your care is important to us. I’ll help you understand what’s happening and what to expect throughout your stay.`
+        );
+
+        npcSay(`Current step: ${ER_STEPS[currentStepIndex].label}.`);
+        npcSay("Laura, your triage nurse, has ordered some tests to get your care started. Soon, a team member will call you back to draw your blood and complete a chest X-ray. This may happen before or after you see the physician, but it most often happens first.");
+
+        if (careNextBtn) careNextBtn.disabled = (currentStepIndex >= ER_STEPS.length - 1);
+      }
+
+      function stepDialogue(stepIndex){
+        switch(stepIndex){
+          case 0:
+            return "Registration started. Please keep your phone nearby for updates.";
+          case 1:
+            return "Triage is underway. We’re collecting vitals and your symptoms.";
+          case 2:
+            return "Your chest X-ray has been completed. It usually takes about 30-45 minutes for the radiologist to review the images. If you removed any jewelry for the exam, please make sure you have it with you, so it isn’t misplaced.";
+          case 3:
+            return "Dr. Brady is now reviewing your chart. She’ll be calling you back shortly to examine you and talk with you about your care";
+          case 4:
+            return "Dr. Brady ordered a medication called Zofran for you to help treat nausea. A nurse will call you back shortly to give you the medication. This should help you start feeling better.";
+          default:
+            return "Progress update received.";
+        }
+      }
+
+  
+
+      /**
+       * Advances the visit by one step (demo) and optionally progresses one test.
+       * Returns what changed so the NPC can narrate it.
+       */
       function bumpStatusDemo(){
+        const prevStep = currentStepIndex;
+
         currentStepIndex = Math.min(currentStepIndex + 1, ER_STEPS.length - 1);
+
+        let changedTest = null;
+
         renderTimeline();
         updateStatusCards();
 
-        // “unlock” some test progress as we move
+        // Begin moving tests once we reach the labs/imaging phase
         if (currentStepIndex >= 3) {
-          // move one item forward per refresh (demo)
           const idx = TESTS.findIndex(x => x.status !== "Final");
           if (idx !== -1) {
+            const before = TESTS[idx].status;
+
             if (TESTS[idx].status === "Ordered") TESTS[idx].status = "In progress";
             else if (TESTS[idx].status === "In progress") {
               TESTS[idx].status = "Final";
               TESTS[idx].detail = "Result available (demo)";
             }
+
+            const after = TESTS[idx].status;
+            if (before !== after) changedTest = { name: TESTS[idx].name, status: after };
           }
           renderTests();
+        }
+
+        return { prevStep, newStep: currentStepIndex, changedTest };
+      }
+
+      function continueCare(){
+        if (currentStepIndex >= ER_STEPS.length - 1) {
+          npcSay("Dr. Brady has reviewed your results and is preparing you for discharge. She will be with you shortly to go over your results with you, and your nurse will provide your discharge instructions.");
+          if (careNextBtn) careNextBtn.disabled = true;
+          return;
+        }
+
+        const delta = bumpStatusDemo();
+
+        npcSay(stepDialogue(delta.newStep));
+
+        if (delta.changedTest) {
+          npcSay(testDeltaDialogue(delta.changedTest.name, delta.changedTest.status));
+        } else if (delta.newStep >= 3) {
+          npcSay("No new results posted yet (demo). Try Continue care again to simulate more progress.");
+        }
+
+        if (delta.newStep >= 4) {
+          npcSay("You’ve reached Discharge. Open the Discharge tab to view instructions (demo).");
+          if (careNextBtn) careNextBtn.disabled = true;
         }
       }
 
@@ -945,7 +1134,7 @@
         const full = `Welcome! You’ve already authenticated by scanning a QR code at ER check-in.
 
 Next, we’ll link your ER visit and load a dashboard showing:
-current step (triage, provider, tests), estimated wait, tests ordered, and discharge info (all demo data).
+current step (triage, provider, tests), estimated wait, and discharge info (all demo data).
 
 This is a UI demo only — no real patient information.`;
 
@@ -1001,6 +1190,8 @@ This is a UI demo only — no real patient information.`;
         appShell.classList.add("active");
         setSignedInUI();
         switchView("Status");
+        // Ensure chat exists and is seeded for this session
+        seedNpcChat();
       }
 
       function startQRFlow(){
@@ -1019,7 +1210,6 @@ This is a UI demo only — no real patient information.`;
         clearSession();
         localStorage.removeItem(INTRO_SEEN_KEY);
 
-        // reset demo state
         currentStepIndex = 1;
         TESTS = [
           { name: "ECG (12-lead)", status: "Final", detail: "Normal sinus rhythm (demo)" },
@@ -1027,19 +1217,36 @@ This is a UI demo only — no real patient information.`;
           { name: "Chest X-ray", status: "Ordered", detail: "Queued (demo)" },
           { name: "CBC", status: "Final", detail: "Within normal range (demo)" },
         ];
+
         if (rememberEl) rememberEl.checked = true;
         if (questionInput) questionInput.value = "";
         if (questionSent) questionSent.style.display = "none";
         dischargePacket.style.display = "none";
+
+        // Re-render and reset chat state for next time
+        renderTimeline();
+        updateStatusCards();
+        renderTests();
+        clearChat();
+        if (careNextBtn) careNextBtn.disabled = false;
 
         goIntro();
       }
 
       // INIT
       (function init(){
-        // restore remember toggle preference
+        // restore remember preference
         const remember = localStorage.getItem(REMEMBER_KEY);
         if (remember === "0") rememberEl.checked = false;
+
+        // init visit visuals
+        visitIdEl.textContent = makeVisitId();
+        arrivalTimeEl.textContent = nowTime();
+        updatedTimeEl.textContent = nowTime();
+
+        renderTimeline();
+        updateStatusCards();
+        renderTests();
 
         // restore session
         const token = localStorage.getItem(TOKEN_KEY);
@@ -1052,15 +1259,6 @@ This is a UI demo only — no real patient information.`;
           if (!introSeen) goIntro();
           else goQR();
         }
-
-        // init visit visuals
-        visitIdEl.textContent = makeVisitId();
-        arrivalTimeEl.textContent = nowTime();
-        updatedTimeEl.textContent = nowTime();
-
-        renderTimeline();
-        updateStatusCards();
-        renderTests();
       })();
 
       // INTRO events
@@ -1080,31 +1278,40 @@ This is a UI demo only — no real patient information.`;
       resetBtnTop.addEventListener("click", () => resetEverything());
 
       // STATUS events
-      refreshStatusBtn.addEventListener("click", () => bumpStatusDemo());
+      refreshStatusBtn.addEventListener("click", () => {
+        bumpStatusDemo();
+        npcSay("Status refreshed (demo). Tap “Continue care” to move the visit forward.");
+        if (careNextBtn) careNextBtn.disabled = (currentStepIndex >= ER_STEPS.length - 1);
+      });
+
+      // NEW: Care progression
+      careNextBtn?.addEventListener("click", continueCare);
 
       // TRIAGE events
       updateSymptomsBtn.addEventListener("click", () => {
-        // tiny demo mutation
         chiefComplaintEl.textContent = "Shortness of breath (demo)";
         vHR.textContent = "102";
         triageLevelEl.textContent = "ESI 2 (High risk) — demo";
         alert("Demo: symptoms updated.");
+        npcSay("Update received: symptoms changed (demo). If you feel worse, tell staff immediately.");
       });
 
       // TESTS events
       simulateTestUpdateBtn.addEventListener("click", () => {
-        // push one test forward
         const idx = TESTS.findIndex(x => x.status !== "Final");
         if (idx === -1) {
           alert("All results are already final (demo).");
+          npcSay("All results are already final (demo).");
           return;
         }
+        const before = TESTS[idx].status;
         if (TESTS[idx].status === "Ordered") TESTS[idx].status = "In progress";
         else if (TESTS[idx].status === "In progress") {
           TESTS[idx].status = "Final";
           TESTS[idx].detail = "Result available (demo)";
         }
         renderTests();
+        npcSay(testDeltaDialogue(TESTS[idx].name, TESTS[idx].status));
       });
 
       // CARE TEAM events
@@ -1121,16 +1328,19 @@ This is a UI demo only — no real patient information.`;
         questionSent.style.color = "var(--good)";
         questionSent.textContent = "Sent (demo). No real delivery.";
         questionInput.value = "";
+        npcSay("Question sent to care team (demo). A response may appear in the Team tab.");
       });
 
       // DISCHARGE events
       generateDischargeBtn.addEventListener("click", () => {
         if (currentStepIndex < 4) {
           alert("Demo: discharge packet becomes available once the visit reaches Discharge.");
+          npcSay("Discharge packet isn’t ready yet (demo). Continue care until Discharge.");
           return;
         }
         dischargePacket.style.display = "block";
         alert("Demo: discharge packet generated.");
+        npcSay("Discharge packet generated ✅ (demo).");
       });
 
       logoutBtn.addEventListener("click", () => {
